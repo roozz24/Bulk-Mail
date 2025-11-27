@@ -33,8 +33,8 @@ app.post('/sendmail', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Missing message or emails' });
     }
 
-    await credential.find(function () {
-      
+    await credential.find().then(async (creds) => {
+
       const transporter = nodemailer.createTransport({
         service: 'gmail',
         auth: {
