@@ -38,8 +38,8 @@ app.post('/sendmail', async (req, res) => {
       const transporter = nodemailer.createTransport({
         service: 'gmail',
         auth: {
-          user: creds[0].toJSON().user,
-          pass: creds[0].toJSON().pass,
+          user: creds.user,
+          pass: creds.pass,
         },
       });
 
