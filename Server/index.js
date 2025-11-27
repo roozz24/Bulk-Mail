@@ -5,7 +5,9 @@ const mongoose = require('mongoose');
 
 const app = express();
 app.use(express.json());
-app.use(cors());
+app.use(cors({
+  origin: process.env.FRONTEND_URL || '*'
+}));
 
 mongoose.connect('mongodb+srv://roozo:rooso1234@cluster0.ij3k6ck.mongodb.net/passkey?appName=Cluster0').then(function () {
   console.log('Connected to MongoDB');
@@ -59,6 +61,5 @@ app.post('/sendmail', (req, res) => {
 });
 
 
-app.listen(5000, () => {
-  console.log('Server is started...');
-});
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => console.log(`Server started on ${PORT}`));
