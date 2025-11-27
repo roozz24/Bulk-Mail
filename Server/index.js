@@ -25,7 +25,6 @@ mongoose.connect(MONGO_URI, { serverSelectionTimeoutMS: 10000 }).then(function (
 const credential = mongoose.model('credential', {}, 'bulkmail');
 
 app.post('/sendmail', async (req, res) => {
-
   try {
     const { msg, emails } = req.body || {};
 
@@ -33,24 +32,21 @@ app.post('/sendmail', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Missing message or emails' });
     }
 
-    await credential.find().then(async (creds) => {
+    const creds = await credential.findOne().lean().exec();
+    if (!creds || !creds.user || !creds.pass) {
+      console.error('No email credentials found in DB');
+      return res.status(500).json({ success: false, message: 'Mail credentials missing' });
+    }
 
-      const transporter = nodemailer.createTransport({
-        service: 'gmail',
-        auth: {
-          user: creds.user,
-          pass: creds.pass,
-        },
-      });
-
-      try {
-        transporter.verify();
-        console.log('Transporter verified');
-      } catch (err) {
-        console.error('Transporter verify failed', err && err.message);
-        return res.status(502).json({ success: false, message: 'SMTP verification failed', error: err?.message });
-      };
+    // --- IMPORTANT: transporter declared here (same scope as everything below) ---
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: { user: creds.user, pass: creds.pass },
     });
+
+    console.log('transporter type before verify:', typeof transporter);
+    await transporter.verify(); // will throw if SMTP creds bad
+    console.log('Transporter verified');
 
     const results = [];
     for (const to of emails) {
@@ -61,8 +57,10 @@ app.post('/sendmail', async (req, res) => {
           subject: 'Message from Bulk Mail App',
           text: msg
         });
+
         console.log('sendMail ok ->', to, 'messageId:', info.messageId, 'response:', info.response);
         results.push({ to, ok: true, id: info.messageId || null, raw: info });
+
       } catch (err) {
         console.error('sendMail error ->', to, err && (err.message || err));
         results.push({ to, ok: false, error: err?.message || 'send error' });
@@ -73,10 +71,11 @@ app.post('/sendmail', async (req, res) => {
     return res.json({ success: true, sent: sentCount, results });
 
   } catch (err) {
-    console.error('Unhandled /sendmail error:', err);
+    console.error('Unhandled /sendmail error:', err && (err.stack || err));
     return res.status(500).json({ success: false, message: 'Internal server error', error: err?.message });
   }
 });
+
 
 
 const PORT = process.env.PORT || 5000;
