@@ -32,19 +32,18 @@ app.post('/sendmail', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Missing message or emails' });
     }
 
-    const creds = await credential.findOne().lean().exec();
-    if (!creds || !creds.user || !creds.pass) {
-      console.error('No email credentials found in DB');
-      return res.status(500).json({ success: false, message: 'Mail credentials missing' });
-    }
+    const creds = await credential.find();
 
     const transporter = nodemailer.createTransport({
       service: 'gmail',
-      auth: { user: creds.user, pass: creds.pass },
+      auth: {
+        user: creds.user,
+        pass: creds.pass
+      },
     });
 
     console.log('transporter type before verify:', typeof transporter);
-    await transporter.verify(); 
+    await transporter.verify();
     console.log('Transporter verified');
 
     const results = [];
