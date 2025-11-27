@@ -24,7 +24,7 @@ function App() {
       // const rows = XLSX.utils.sheet_to_json(jsonData, { header: 1 });
       console.log(jsonData);
 
-      setEmailList(jsonData.slice(1).flat());
+      setEmailList(jsonData);
 
       if (!file) return;
       setFile(file);
