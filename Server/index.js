@@ -5,59 +5,79 @@ const mongoose = require('mongoose');
 
 const app = express();
 app.use(express.json());
+
+const FRONTEND = process.env.FRONTEND_URL || 'https://bulk-mail-lemon-six.vercel.app';
 app.use(cors({
-  origin: 'https://bulk-mail-lemon-six.vercel.app',
+  origin: FRONTEND,
 }));
 
-mongoose.connect('mongodb+srv://roozo:rooso1234@cluster0.ij3k6ck.mongodb.net/passkey?appName=Cluster0').then(function () {
+const MONGO_URI = process.env.MONGO_URI;
+if(!MONGO_URI){
+  console.error('MONGO_URI not set in env');
+  process.exit(1);
+}
+mongoose.connect(MONGO_URI, {useNewUrlParser: true, useUnifiedTopology: true}).then(function () {
   console.log('Connected to MongoDB');
-}).catch(function () {
-  console.log('Error connecting to MongoDB');
+}).catch(function (err) {
+  console.log('Error connecting to MongoDB', err && err.message);
 });
 
 const credential = mongoose.model('credential', {}, 'bulkmail');
 
-app.post('/sendmail', (req, res) => {
+app.post('/sendmail', async (req, res) => {
 
-  var msg = req.body.msg;
-  var emails = req.body.emails;
-  credential.find().then(function (data) {
+  try {
+    const { msg, emails } = req.body || {};
+
+    if (!msg || !Array.isArray(emails) || emails.length === 0) {
+      return res.status(400).json({ success: false, message: 'Missing message or emails' });
+    }
+
+    const creds = await credential.findOne().lean().exec();
+    if (!creds || !creds.user || !creds.pass) {
+      console.error('No email credentials found in DB');
+      return res.status(500).json({ success: false, message: 'Mail credentials missing' });
+    }
     const transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {
-        user: data[0].toJSON().user,
-        pass: data[0].toJSON().pass,
-      }
+        user: creds.user,
+        pass: creds.pass,
+      },
     });
 
+    try {
+      await transporter.verify();
+      console.log('Transporter verified');
+    } catch (err) {
+      console.error('Transporter verify failed', err && err.message);
+      return res.status(502).json({ success: false, message: 'SMTP verification failed', error: err?.message });
+    }
 
-    new Promise(async function (resolve, reject) {
+    const results = [];
+    for (const to of emails) {
       try {
-        for (let i = 0; i < emails.length; i++) {
-
-          await transporter.sendMail(
-            {
-              from: 'fedelhenry.7@gmail.com',
-              to: emails[i],
-              subject: 'Msg from Bulk Mail App',
-              text: msg,
-            }
-          )
-          console.log('Email sent to ' + emails[i]);
-        };
-        resolve('All emails sent');
-
-      } catch (error) {
-        reject('Error sending emails');
+        const info = await transporter.sendMail({
+          from: creds.user,
+          to,
+          subject: 'Message from Bulk Mail App',
+          text: msg
+        });
+        results.push({ to, ok: true, id: info.messageId || null });
+        console.log('Email sent to', to);
+      } catch (err) {
+        console.error('Failed to send to', to, err && err.message);
+        results.push({ to, ok: false, error: err?.message || 'send error' });
       }
-    }).then(function () {
-      res.send(true);
-    }).catch(function () {
-      res.send(false);
-    });
-  }).catch(function (err) {
-    console.log(err);
-  });
+    }
+
+    const sentCount = results.filter(r => r.ok).length;
+    return res.json({ success: true, sent: sentCount, results });
+
+  } catch (err) {
+    console.error('Unhandled /sendmail error:', err);
+    return res.status(500).json({ success: false, message: 'Internal server error', error: err?.message });
+  }
 });
 
 
