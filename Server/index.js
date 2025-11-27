@@ -38,14 +38,13 @@ app.post('/sendmail', async (req, res) => {
       return res.status(500).json({ success: false, message: 'Mail credentials missing' });
     }
 
-    // --- IMPORTANT: transporter declared here (same scope as everything below) ---
     const transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: { user: creds.user, pass: creds.pass },
     });
 
     console.log('transporter type before verify:', typeof transporter);
-    await transporter.verify(); // will throw if SMTP creds bad
+    await transporter.verify(); 
     console.log('Transporter verified');
 
     const results = [];
