@@ -33,7 +33,7 @@ app.post('/sendmail', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Missing message or emails' });
     }
 
-    const creds = await credential.findOne().lean().exec();
+    const creds = await credential.find();
     if (!creds || !creds.user || !creds.pass) {
       console.error('No email credentials found in DB');
       return res.status(500).json({ success: false, message: 'Mail credentials missing' });
@@ -41,8 +41,8 @@ app.post('/sendmail', async (req, res) => {
     const transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {
-        user: creds.user,
-        pass: creds.pass,
+        user: creds[0].toJSON().user,
+        pass: creds[0].toJSON().pass,
       },
     });
 
