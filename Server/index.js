@@ -6,7 +6,7 @@ const mongoose = require('mongoose');
 const app = express();
 app.use(express.json());
 app.use(cors({
-  origin: '*',
+  origin: 'https://bulk-mail-lemon-six.vercel.app',
 }));
 
 mongoose.connect('mongodb+srv://roozo:rooso1234@cluster0.ij3k6ck.mongodb.net/passkey?appName=Cluster0').then(function () {
