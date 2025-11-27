@@ -16,7 +16,7 @@ if(!MONGO_URI){
   console.error('MONGO_URI not set in env');
   process.exit(1);
 }
-mongoose.connect(MONGO_URI, {useNewUrlParser: true, useUnifiedTopology: true}).then(function () {
+mongoose.connect(MONGO_URI, {serverSelectionTimeoutMS: 10000}).then(function () {
   console.log('Connected to MongoDB');
 }).catch(function (err) {
   console.log('Error connecting to MongoDB', err && err.message);
