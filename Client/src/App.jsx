@@ -8,6 +8,7 @@ function App() {
   const [isSending, setIsSending] = useState(false);
   const [emailList, setEmailList] = useState([]);
   const fileInputRef = useRef(null);
+  const API = import.meta.env.VITE_API_URL;
 
   const handleFileChange = (event) => {
     const file = event.target.files[0];
@@ -51,7 +52,7 @@ function App() {
 
     setIsSending(true);
 
-    axios.post("http://localhost:5000/sendmail", {
+    axios.post(`${API}/sendmail`, {
       msg: message,
       emails: emailList,
     }).then(function (data) {
