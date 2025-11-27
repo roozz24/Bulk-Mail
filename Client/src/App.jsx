@@ -222,7 +222,7 @@ function App() {
                 </div>
               </div>
             </div>
-            <p className="text-sm font-medium text-[#4a4a4a] bg-white/70 mb-6 flex justify-center">
+            <p className="text-sm font-medium text-[#4a4a4a] mb-6 flex justify-center">
               Total Emails in the file: {function () {
                 if (file === null) {
                   emailList.length = 0;
