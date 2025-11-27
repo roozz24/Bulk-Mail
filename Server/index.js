@@ -12,11 +12,11 @@ app.use(cors({
 }));
 
 const MONGO_URI = process.env.MONGO_URI;
-if(!MONGO_URI){
+if (!MONGO_URI) {
   console.error('MONGO_URI not set in env');
   process.exit(1);
 }
-mongoose.connect(MONGO_URI, {serverSelectionTimeoutMS: 10000}).then(function () {
+mongoose.connect(MONGO_URI, { serverSelectionTimeoutMS: 10000 }).then(function () {
   console.log('Connected to MongoDB');
 }).catch(function (err) {
   console.log('Error connecting to MongoDB', err && err.message);
@@ -33,26 +33,24 @@ app.post('/sendmail', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Missing message or emails' });
     }
 
-    const creds = await credential.find();
-    if (!creds || !creds.user || !creds.pass) {
-      console.error('No email credentials found in DB');
-      return res.status(500).json({ success: false, message: 'Mail credentials missing' });
-    }
-    const transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: creds[0].toJSON().user,
-        pass: creds[0].toJSON().pass,
-      },
-    });
+    await credential.find(function () {
+      
+      const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+          user: creds[0].toJSON().user,
+          pass: creds[0].toJSON().pass,
+        },
+      });
 
-    try {
-      await transporter.verify();
-      console.log('Transporter verified');
-    } catch (err) {
-      console.error('Transporter verify failed', err && err.message);
-      return res.status(502).json({ success: false, message: 'SMTP verification failed', error: err?.message });
-    }
+      try {
+        transporter.verify();
+        console.log('Transporter verified');
+      } catch (err) {
+        console.error('Transporter verify failed', err && err.message);
+        return res.status(502).json({ success: false, message: 'SMTP verification failed', error: err?.message });
+      };
+    });
 
     const results = [];
     for (const to of emails) {
