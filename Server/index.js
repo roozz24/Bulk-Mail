@@ -61,10 +61,10 @@ app.post('/sendmail', async (req, res) => {
           subject: 'Message from Bulk Mail App',
           text: msg
         });
-        results.push({ to, ok: true, id: info.messageId || null });
-        console.log('Email sent to', to);
+        console.log('sendMail ok ->', to, 'messageId:', info.messageId, 'response:', info.response);
+        results.push({ to, ok: true, id: info.messageId || null, raw: info });
       } catch (err) {
-        console.error('Failed to send to', to, err && err.message);
+        console.error('sendMail error ->', to, err && (err.message || err));
         results.push({ to, ok: false, error: err?.message || 'send error' });
       }
     }
