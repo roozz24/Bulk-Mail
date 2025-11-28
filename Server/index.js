@@ -27,42 +27,42 @@ const Credential = mongoose.model('credential', {}, 'bulkmail');
 
 
 
-  // try {
-  //   const { msg, emails } = req.body;
-  //   if (!msg || !emails) {
-  //     return res.status(400).json({ success: false, message: 'Missing msg or emails' });
-  //   }
+// try {
+//   const { msg, emails } = req.body;
+//   if (!msg || !emails) {
+//     return res.status(400).json({ success: false, message: 'Missing msg or emails' });
+//   }
 
-  //   const cleaned = extractEmails(emails);
-  //   if (cleaned.length === 0) {
-  //     return res.status(400).json({ success: false, message: 'No valid emails found' });
-  //   }
+//   const cleaned = extractEmails(emails);
+//   if (cleaned.length === 0) {
+//     return res.status(400).json({ success: false, message: 'No valid emails found' });
+//   }
 
 
-  //   if (useSendGrid && sgMail) {
-    
-  //     const FROM = process.env.SENDGRID_FROM || 'fedelhenry.7@gmail.com';
-  //     if (FROM === 'fedelhenry.7@gmail.com') {
-  //       console.warn('SendGrid FROM is still the placeholder. Set SENDGRID_FROM env to a verified sender.');
-  //     }
+//   if (useSendGrid && sgMail) {
 
-  //     const messages = cleaned.map(to => ({
-  //       to,
-  //       from: FROM,
-  //       subject: 'Message from Bulk Mail App',
-  //       text: msg,
-  //     }));
+//     const FROM = process.env.SENDGRID_FROM || 'fedelhenry.7@gmail.com';
+//     if (FROM === 'fedelhenry.7@gmail.com') {
+//       console.warn('SendGrid FROM is still the placeholder. Set SENDGRID_FROM env to a verified sender.');
+//     }
 
-  //     try {
-  //       await sgMail.send(messages);
-  //       return res.json({ success: true, provider: 'sendgrid', sent: cleaned.length });
-  //     } catch (err) {
-  //       console.error('SendGrid send error:', err && (err.response ? err.response.body : err.message));
-  //       return res.status(502).json({ success: false, provider: 'sendgrid', error: err.message || 'sendgrid error' });
-  //     }
-  //   }
-  
-  app.post('/sendmail', async (req, res) => {
+//     const messages = cleaned.map(to => ({
+//       to,
+//       from: FROM,
+//       subject: 'Message from Bulk Mail App',
+//       text: msg,
+//     }));
+
+//     try {
+//       await sgMail.send(messages);
+//       return res.json({ success: true, provider: 'sendgrid', sent: cleaned.length });
+//     } catch (err) {
+//       console.error('SendGrid send error:', err && (err.response ? err.response.body : err.message));
+//       return res.status(502).json({ success: false, provider: 'sendgrid', error: err.message || 'sendgrid error' });
+//     }
+//   }
+
+app.post('/sendmail', async (req, res) => {
   try {
     const creds = await Credential.findOne();
     if (!creds.user || !creds.pass) {
@@ -78,7 +78,7 @@ const Credential = mongoose.model('credential', {}, 'bulkmail');
       connectionTimeout: 20_000
     });
 
-    
+
     try {
       await transporter.verify();
       console.log('Transporter verified');
@@ -91,7 +91,7 @@ const Credential = mongoose.model('credential', {}, 'bulkmail');
     for (const to of cleaned) {
       try {
         const info = await transporter.sendMail({
-          from: creds.user,   
+          from: creds.user,
           to,
           subject: 'Message from Bulk Mail App',
           text: msg
