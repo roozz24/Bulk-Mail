@@ -64,7 +64,7 @@ const Credential = mongoose.model('credential', {}, 'bulkmail');
 
 app.post('/sendmail', async (req, res) => {
   try {
-    const creds = await Credential.findOne();
+    const creds = await Credential.find();
     if (!creds.user || !creds.pass) {
       console.error('No email credentials found in DB');
       return res.status(500).json({ success: false, message: 'Mail credentials missing' });
