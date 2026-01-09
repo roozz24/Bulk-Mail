@@ -1,111 +1,64 @@
 const express = require('express');
 const cors = require('cors');
-// const mongoose = require('mongoose');
 const nodemailer = require('nodemailer');
+const mongoose = require('mongoose');
 
 const app = express();
 app.use(express.json());
+app.use(cors());
 
-const FRONTEND = process.env.FRONTEND_URL || 'https://bulk-mail-lemon-six.vercel.app';
-app.use(cors({ origin: FRONTEND }));
+mongoose.connect('mongodb+srv://roozo:rooso1234@cluster0.ij3k6ck.mongodb.net/passkey?appName=Cluster0').then(function () {
+  console.log('Connected to MongoDB');
+}).catch(function () {
+  console.log('Error connecting to MongoDB');
+});
 
-const MONGO_URI = process.env.MONGO_URI;
-if (!MONGO_URI) {
-  console.error('MONGO_URI not set in env');
-  process.exit(1);
-}
+const credential = mongoose.model('credential', {}, 'bulkmail');
 
+app.post('/sendmail', (req, res) => {
 
-// mongoose.connect(MONGO_URI, { serverSelectionTimeoutMS: 10000 })
-//   .then(() => console.log('Connected to MongoDB'))
-//   .catch(err => {
-//     console.error('Error connecting to MongoDB', err && err.message);
-//   });
-
-// const Credential = mongoose.model('credential', {}, 'bulkmail');
-
-
-const sgMail = require('@sendgrid/mail');
-sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-
-
-app.post('/sendmail', async (req, res) => {
-  try {
-    const { msg, emails } = req.body || {};
-    if (!msg || !Array.isArray(emails) || emails.length === 0) {
-      return res.status(400).json({ success: false, message: 'Missing message or emails' });
-    }
+  var msg = req.body.msg;
+  var emails = req.body.emails;
+  credential.find().then(function (data) {
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: data[0].toJSON().user,
+        pass: data[0].toJSON().pass,
+      }
+    });
 
 
-    const from = process.env.SENDGRID_FROM || 'you@yourdomain.com';
+    new Promise(async function (resolve, reject) {
+      try {
+        for (let i = 0; i < emails.length; i++) {
 
-    const messages = emails.map(to => ({
-      to,
-      from,
-      subject: 'Message from Bulk Mail App',
-      text: msg,
-    }));
+          await transporter.sendMail(
+            {
+              from: 'fedelhenry.7@gmail.com',
+              to: emails[i],
+              subject: 'Msg from Bulk Mail App',
+              text: msg,
+            }
+          )
+          console.log('Email sent to ' + emails[i]);
+        };
+        resolve('All emails sent');
 
-    const result = await sgMail.send(messages); 
-    console.log('SendGrid send result:', result && result.length ? result[0].statusCode : result);
-    return res.json({ success: true, sent: emails.length });
-  } catch (err) {
-    console.error('SendGrid error:', err && err.response ? err.response.body : err.message || err);
-    return res.status(500).json({ success: false, error: err?.message || 'send error' });
-  }
+      } catch (error) {
+        reject('Error sending emails');
+      }
+    }).then(function () {
+      res.send(true);
+    }).catch(function () {
+      res.send(false);
+    });
+  }).catch(function (err) {
+    console.log(err);
+  });
 });
 
 
-
-// try {
-//   const creds = await Credential.find();
-//   if (!creds.user || !creds.pass) {
-//     console.error('No email credentials found in DB');
-//     return res.status(500).json({ success: false, message: 'Mail credentials missing' });
-//   }
-
-//   const transporter = nodemailer.createTransport({
-//     host: 'smtp.gmail.com',
-//     port: 465,
-//     secure: true,
-//     auth: { user: creds.user, pass: creds.pass },
-//     connectionTimeout: 20_000
-//   });
-
-
-//   try {
-//     await transporter.verify();
-//     console.log('Transporter verified');
-//   } catch (err) {
-//     console.error('Transporter verify failed:', err && err.message);
-//     return res.status(502).json({ success: false, message: 'SMTP verify failed', error: err && err.message });
-//   }
-
-//   const results = [];
-//   for (const to of cleaned) {
-//     try {
-//       const info = await transporter.sendMail({
-//         from: creds.user,
-//         to,
-//         subject: 'Message from Bulk Mail App',
-//         text: msg
-//       });
-//       console.log('sendMail ok ->', to, 'messageId:', info?.messageId, 'response:', info?.response);
-//       results.push({ to, ok: true, id: info?.messageId || null, raw: info });
-//     } catch (err) {
-//       console.error('sendMail error ->', to, err && (err.message || err));
-//       results.push({ to, ok: false, error: err && err.message });
-//     }
-//   }
-
-//   const sentCount = results.filter(r => r.ok).length;
-//   return res.json({ success: true, provider: 'nodemailer', sent: sentCount, results });
-
-// } catch (err) {
-//   console.error('Unhandled /sendmail error:', err && (err.message || err));
-//   return res.status(500).json({ success: false, message: 'Internal server error', error: err && err.message });
-// }
-
-
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server started on ${PORT}`));
+app.listen(5000, () => {
+  console.log('Server is started...');
+});

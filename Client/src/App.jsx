@@ -8,7 +8,6 @@ function App() {
   const [isSending, setIsSending] = useState(false);
   const [emailList, setEmailList] = useState([]);
   const fileInputRef = useRef(null);
-  const API = import.meta.env.VITE_API_URL || 'https://bulk-mail-gs0d.onrender.com';
 
   const handleFileChange = (event) => {
     const file = event.target.files[0];
@@ -44,54 +43,34 @@ function App() {
     setMessage(evt.target.value);
   }
 
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
     if (!file) {
       alert("Please attach an Excel file with email IDs.");
       return;
     }
+
+    setIsSending(true);
+
+    axios.post("http://localhost:5000/sendmail", {
+      msg: message,
+      emails: emailList,
+    }).then(function (data) {
+      if (data.data === true) {
+        alert("Emails sent successfully!!");
+        setIsSending(false);
+      } else {
+        alert("Failed to send emails.");
+        setIsSending(false);
+      }
+    })
 
     if (!message.trim()) {
       alert("Write your email content first.");
       return;
     }
 
-    if (emailList.length === 0) {
-      alert("Your Excel file contains no email IDs.");
-      return;
-    }
-
     setIsSending(true);
-
-    try {
-      const cleanedEmails = emailList
-        .flat()
-        .map(item => item && item.toString().trim())
-        .filter(email => email && email.includes("@"));
-
-      if (cleanedEmails.length === 0) {
-        alert("No valid email addresses found in file.");
-        return;
-      }
-
-      const res = await axios.post(`${API}/sendmail`, {
-        msg: message,
-        emails: cleanedEmails
-      });
-
-      if (res.data === true || res.data.success) {
-        alert("Emails sent successfully!");
-      } else {
-        alert("Failed to send emails.");
-        console.log("Backend response:", res.data);
-      }
-    } catch (err) {
-      console.error("Axios Error:", err);
-      alert("Server error or CORS error. Check console.");
-    } finally {
-      setIsSending(false);
-    }
   };
-
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#fce4ff] via-[#e6f0ff] to-[#fdf6e4] antialiased flex items-center justify-center px-4 py-8">
@@ -242,7 +221,7 @@ function App() {
                 </div>
               </div>
             </div>
-            <p className="text-sm font-medium text-[#4a4a4a] mb-6 flex justify-center">
+            <p className="text-sm font-medium text-[#4a4a4a] bg-white/70 mb-6 flex justify-center">
               Total Emails in the file: {function () {
                 if (file === null) {
                   emailList.length = 0;
